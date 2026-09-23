@@ -4848,7 +4848,8 @@ async function fetchKitsuEpisodes(kitsuId) {
     const normalizedKitsuId = normalizeKitsuId(kitsuId);
     if (!normalizedKitsuId) return [];
 
-    const cacheKey = `kitsu:episodes:${normalizedKitsuId}`;
+    // Invalidate episode lists cached when pagination stopped after 50 pages (1000 episodes).
+    const cacheKey = `kitsu:episodes:v2:${normalizedKitsuId}`;
     const cached = await cache.get(cacheKey);
     if (isNegativeCache(cached)) return [];
     if (cached) return cached;
@@ -4859,7 +4860,8 @@ async function fetchKitsuEpisodes(kitsuId) {
     let pageSafetyCounter = 0;
 
     try {
-        while (hasNext && pageSafetyCounter < 50) {
+        // Continue through Kitsu's next links; retain a generous guard against broken pagination.
+        while (hasNext && pageSafetyCounter < 500) {
             const response = await fetch(`${KITSU_BASE_URL}/anime/${encodeURIComponent(normalizedKitsuId)}/episodes?page[limit]=20&page[offset]=${offset}&sort=number`, {
                 headers: {
                     Accept: "application/vnd.api+json, application/json"
